@@ -141,6 +141,7 @@
        
         .hero-visual {
             position: relative;
+            text-align: center;
         }
        
         .hero-visual img {
@@ -150,21 +151,6 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
        
-        /* Анимация текста (добавлено как ты просил) */
-        .fade-in {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeInUp 1s ease forwards;
-        }
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .delay-1 { animation-delay: 0.2s; }
-        .delay-2 { animation-delay: 0.5s; }
-
         /* Stats */
         .stats {
             display: flex;
@@ -403,10 +389,9 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
+    <!-- Header с лого в левом углу -->
     <header class="header">
         <div class="logo">
-            <!-- Официальное лого Tether (добавлено как ты просил) -->
             <img src="https://tether.to/wp-content/uploads/2016/10/TetherLogo.png" alt="Tether Logo">
             <span>Tether</span>
         </div>
@@ -419,29 +404,29 @@
             <button class="btn btn-primary" onclick="connectWallet()">Connect</button>
         </div>
     </header>
-    <!-- Hero Section -->
+    <!-- Hero Section с лого в правой части -->
     <section class="hero">
         <div class="hero-content">
             <div class="hero-text">
-                <!-- Анимация текста (добавлено как ты просил) -->
-                <h1 class="fade-in delay-1">The World's First<br><span class="fade-in delay-2">Stablecoin</span></h1>
-                <p class="fade-in delay-2">Tether tokens are the most widely adopted stablecoins, having pioneered the concept in the digital token space. A disruptor to the conventional financial system and a trailblazer in the digital use of traditional currencies.</p>
+                <h1>The World's First<br><span>Stablecoin</span></h1>
+                <p>Tether tokens are the most widely adopted stablecoins, having pioneered the concept in the digital token space. A disruptor to the conventional financial system and a trailblazer in the digital use of traditional currencies.</p>
                 <div class="stats">
                     <div class="stat-item">
-                        <div class="stat-number fade-in delay-1">$110B+</div>
+                        <div class="stat-number">$110B+</div>
                         <div class="stat-label">Market Cap</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number fade-in delay-1">99.9%</div>
+                        <div class="stat-number">99.9%</div>
                         <div class="stat-label">Uptime</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number fade-in delay-1">200+</div>
+                        <div class="stat-number">200+</div>
                         <div class="stat-label">Countries</div>
                     </div>
                 </div>
             </div>
             <div class="hero-visual">
+                <!-- Лого в правой части hero (как на официальном) -->
                 <img src="https://tether.to/wp-content/uploads/2023/08/tether-hero-image.png" alt="Tether Global">
             </div>
         </div>
